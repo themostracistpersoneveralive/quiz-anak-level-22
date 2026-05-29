@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="id" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz Pintar Anak Sholeh</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&amp;display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Nunito', sans-serif; }
+    html, body { height: 100%; margin: 0; }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    @keyframes twinkle { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
+    @keyframes confetti-fall { 0% { transform: translateY(-100%) rotate(0deg); opacity: 1; } 100% { transform: translateY(500%) rotate(720deg); opacity: 0; } }
+    @keyframes bounce-in { 0% { transform: scale(0); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+    @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 20px rgba(129,212,250,0.4); } 50% { box-shadow: 0 0 40px rgba(129,212,250,0.8); } }
+    .float { animation: float 3s ease-in-out infinite; }
+    .twinkle { animation: twinkle 2s ease-in-out infinite; }
+    .bounce-in { animation: bounce-in 0.5s ease-out; }
+    .confetti-piece { position: absolute; width: 10px; height: 10px; border-radius: 50%; animation: confetti-fall 3s ease-in forwards; }
+    .btn-quiz { transition: transform 0.2s, box-shadow 0.2s; }
+    .btn-quiz:hover { transform: scale(1.05); }
+    .btn-quiz:active { transform: scale(0.95); }
+    .match-line { position: absolute; pointer-events: none; z-index: 50; }
+    .match-item { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; user-select: none; }
+    .match-item:hover { transform: scale(1.05); }
+    .match-item.selected { ring: 4px; box-shadow: 0 0 0 4px #4FC3F7; transform: scale(1.08); }
+    .match-item.correct { box-shadow: 0 0 0 4px #66BB6A !important; }
+    .match-item.wrong { box-shadow: 0 0 0 4px #EF5350 !important; }
+  </style>
+  <style>body { box-sizing: border-box; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ <script src="/_sdk/telemetry_sdk.js"></script></head>
+ <body class="h-full overflow-auto" style="background: linear-gradient(180deg, #E8F5E9 0%, #E3F2FD 50%, #FFF3E0 100%);">
+  <div id="app" class="h-full w-full relative">
+   <!-- Decorations -->
+   <div class="absolute inset-0 pointer-events-none overflow-hidden">
+    <div class="absolute top-[5%] left-[10%] text-4xl float" style="animation-delay:0s">
+     ☁️
+    </div>
+    <div class="absolute top-[8%] right-[15%] text-3xl float" style="animation-delay:1s">
+     ☁️
+    </div>
+    <div class="absolute top-[15%] left-[60%] text-2xl float" style="animation-delay:2s">
+     🌈
+    </div>
+    <div class="absolute top-[3%] left-[40%] text-2xl twinkle">
+     ⭐
+    </div>
+    <div class="absolute top-[12%] right-[30%] text-xl twinkle" style="animation-delay:0.5s">
+     ⭐
+    </div>
+    <div class="absolute top-[6%] right-[10%] text-3xl float" style="animation-delay:1.5s">
+     🕌
+    </div>
+    <div class="absolute bottom-[5%] left-[5%] text-2xl float" style="animation-delay:0.8s">
+     🌻
+    </div>
+    <div class="absolute bottom-[10%] right-[8%] text-2xl float" style="animation-delay:1.2s">
+     📖
+    </div>
+   </div><!-- Start Screen -->
+   <div id="start-screen" class="h-full w-full flex items-center justify-center relative z-10"><button onclick="startQuiz()" class="btn-quiz bg-gradient-to-br from-teal-300 to-cyan-200 text-white text-3xl font-black px-12 py-8 rounded-full shadow-xl" style="animation: pulse-glow 2s infinite;"> 🌟 Mulai Quiz 🌟 </button>
+   </div><!-- Quiz Screen -->
+   <div id="quiz-screen" class="h-full w-full hidden flex-col items-center justify-center p-4 relative z-10">
+    <div class="w-full max-w-lg">
+     <div class="flex justify-between items-center mb-4">
+      <span id="q-number" class="bg-teal-200 text-teal-700 font-bold px-4 py-2 rounded-full text-lg">1/15</span> <span id="q-score" class="bg-amber-200 text-amber-700 font-bold px-4 py-2 rounded-full text-lg">⭐ 0</span>
+     </div>
+     <div class="bg-white/80 backdrop-blur rounded-3xl p-6 shadow-lg mb-4">
+      <p id="q-text" class="text-xl font-bold text-gray-700 text-center leading-relaxed"></p>
+     </div>
+     <div id="q-options" class="grid gap-3"></div>
+     <div id="q-match" class="hidden"></div>
+     <div id="q-feedback" class="text-center mt-4 text-2xl font-black hidden bounce-in"></div>
+    </div>
+   </div><!-- Result Screen -->
+   <div id="result-screen" class="h-full w-full hidden flex-col items-center justify-center p-6 relative z-10">
+    <div id="confetti-container" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+    <div class="bg-white/80 backdrop-blur rounded-3xl p-10 shadow-xl text-center max-w-md bounce-in">
+     <div class="text-6xl mb-4">
+      🏆
+     </div>
+     <p id="result-msg" class="text-2xl font-black text-teal-500 mb-2"></p>
+     <p id="result-score" class="text-4xl font-black text-amber-400 mb-6"></p>
+     <div class="text-4xl mb-6">
+      ⭐🌟⭐
+     </div><button onclick="resetQuiz()" class="btn-quiz bg-gradient-to-br from-teal-300 to-green-300 text-white text-xl font-black px-10 py-5 rounded-full shadow-lg"> 🎮 Main Lagi! </button>
+    </div>
+   </div>
+  </div>
+  <script>
+    const questions = [
+      { q: "Allah SWT menciptakan langit dan bumi", type: "tf", answer: true },
+      { q: "Surat Al-Fatihah memiliki 10 ayat", type: "tf", answer: false },
+      { q: "Kita harus berbakti kepada orang tua", type: "tf", answer: true },
+      { q: "Salat Subuh terdiri dari 4 rakaat", type: "tf", answer: false },
+      { q: "Membaca Bismillah sebelum makan adalah sunnah", type: "tf", answer: true },
+      { q: "Berapa jumlah surat dalam Al-Quran?", type: "mc", options: ["100 surat","114 surat","120 surat","99 surat"], answer: 1 },
+      { q: "Malaikat yang mencatat amal baik adalah...", type: "mc", options: ["Jibril","Raqib","Mikail","Israfil"], answer: 1 },
+      { q: "Apa nama bulan puasa umat Islam?", type: "mc", options: ["Syawal","Dzulhijjah","Ramadan","Muharram"], answer: 2 },
+      { q: "Nabi yang membuat kapal besar adalah...", type: "mc", options: ["Nabi Ibrahim","Nabi Nuh","Nabi Musa","Nabi Isa"], answer: 1 },
+      { q: "Berapa jumlah rukun iman?", type: "mc", options: ["5","6","7","4"], answer: 1 },
+      { q: "Huruf pertama dalam Al-Quran adalah Alif", type: "tf", answer: true },
+      { q: "Hari raya umat Islam ada 3 kali setahun", type: "tf", answer: false },
+      // Matching questions
+      { q: "Jodohkan nabi dengan mukjizatnya!", type: "match", left: ["Nabi Musa","Nabi Ibrahim","Nabi Isa"], right: ["Membelah laut","Tidak terbakar api","Menyembuhkan orang sakit"], answers: [0,1,2] },
+      { q: "Jodohkan salat dengan jumlah rakaatnya!", type: "match", left: ["Subuh","Maghrib","Dzuhur"], right: ["2 rakaat","3 rakaat","4 rakaat"], answers: [0,1,2] },
+      { q: "Jodohkan rukun Islam dengan urutannya!", type: "match", left: ["Pertama","Kedua","Ketiga"], right: ["Syahadat","Salat","Zakat"], answers: [0,1,2] }
+    ];
+
+    let current = 0, score = 0, answered = false;
+    let matchState = { selectedLeft: null, connections: [], correctCount: 0 };
+
+    function showScreen(id) {
+      ['start-screen','quiz-screen','result-screen'].forEach(s => {
+        const el = document.getElementById(s);
+        el.classList.add('hidden');
+        el.classList.remove('flex');
+      });
+      const target = document.getElementById(id);
+      target.classList.remove('hidden');
+      target.classList.add('flex');
+    }
+
+    function startQuiz() {
+      current = 0; score = 0; answered = false;
+      showScreen('quiz-screen');
+      renderQuestion();
+    }
+
+    function renderQuestion() {
+      answered = false;
+      matchState = { selectedLeft: null, connections: [], correctCount: 0 };
+      const q = questions[current];
+      document.getElementById('q-number').textContent = `${current+1}/${questions.length}`;
+      document.getElementById('q-score').textContent = `⭐ ${score}`;
+      document.getElementById('q-text').textContent = q.q;
+      document.getElementById('q-feedback').classList.add('hidden');
+      const opts = document.getElementById('q-options');
+      const matchEl = document.getElementById('q-match');
+      opts.innerHTML = '';
+      matchEl.innerHTML = '';
+      matchEl.classList.add('hidden');
+      opts.classList.remove('hidden');
+
+      const colors = ['bg-teal-200 text-teal-700','bg-amber-200 text-amber-700','bg-cyan-200 text-cyan-700','bg-green-200 text-green-700'];
+
+      if (q.type === 'tf') {
+        ['Benar ✅','Salah ❌'].forEach((label, i) => {
+          const btn = document.createElement('button');
+          btn.className = `btn-quiz ${colors[i]} font-bold text-xl py-5 rounded-2xl shadow-md w-full`;
+          btn.textContent = label;
+          btn.onclick = () => checkAnswer(i === 0, btn);
+          opts.appendChild(btn);
+        });
+      } else if (q.type === 'mc') {
+        q.options.forEach((opt, i) => {
+          const btn = document.createElement('button');
+          btn.className = `btn-quiz ${colors[i]} font-bold text-lg py-4 rounded-2xl shadow-md w-full`;
+          btn.textContent = opt;
+          btn.onclick = () => checkAnswer(i, btn);
+          opts.appendChild(btn);
+        });
+      } else if (q.type === 'match') {
+        opts.classList.add('hidden');
+        matchEl.classList.remove('hidden');
+        renderMatchQuestion(q);
+      }
+    }
+
+    function renderMatchQuestion(q) {
+      const matchEl = document.getElementById('q-match');
+      // Shuffle right side for display
+      const rightIndices = q.right.map((_, i) => i);
+      for (let i = rightIndices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [rightIndices[i], rightIndices[j]] = [rightIndices[j], rightIndices[i]];
+      }
+      matchState.rightIndices = rightIndices;
+      matchState.usedLeft = new Set();
+      matchState.usedRight = new Set();
+
+      matchEl.innerHTML = `
+        <div class="flex justify-between gap-4">
+          <div class="flex flex-col gap-3 flex-1" id="match-left">
+            ${q.left.map((item, i) => `<div class="match-item bg-teal-100 text-teal-700 font-bold text-base py-3 px-4 rounded-xl shadow text-center" data-side="left" data-idx="${i}" onclick="selectMatch('left',${i})">${item}</div>`).join('')}
+          </div>
+          <div class="flex items-center justify-center text-3xl text-gray-300 font-black">↔</div>
+          <div class="flex flex-col gap-3 flex-1" id="match-right">
+            ${rightIndices.map((ri) => `<div class="match-item bg-amber-100 text-amber-700 font-bold text-base py-3 px-4 rounded-xl shadow text-center" data-side="right" data-idx="${ri}" onclick="selectMatch('right',${ri})">${q.right[ri]}</div>`).join('')}
+          </div>
+        </div>
+        <p class="text-center text-sm text-gray-400 mt-3 font-bold">Tap satu dari kiri, lalu tap pasangannya di kanan</p>
+      `;
+    }
+
+    function selectMatch(side, idx) {
+      if (answered) return;
+      const q = questions[current];
+
+      if (side === 'left') {
+        if (matchState.usedLeft.has(idx)) return;
+        // Deselect previous
+        document.querySelectorAll('#match-left .match-item').forEach(el => el.style.boxShadow = '');
+        matchState.selectedLeft = idx;
+        const el = document.querySelector(`#match-left [data-idx="${idx}"]`);
+        el.style.boxShadow = '0 0 0 4px #4FC3F7';
+      } else {
+        if (matchState.usedRight.has(idx)) return;
+        if (matchState.selectedLeft === null) return;
+        const leftIdx = matchState.selectedLeft;
+        const correctRightIdx = q.answers[leftIdx];
+        const isCorrect = idx === correctRightIdx;
+
+        const leftEl = document.querySelector(`#match-left [data-idx="${leftIdx}"]`);
+        const rightEl = document.querySelector(`#match-right [data-idx="${idx}"]`);
+
+        if (isCorrect) {
+          leftEl.style.boxShadow = '0 0 0 4px #66BB6A';
+          rightEl.style.boxShadow = '0 0 0 4px #66BB6A';
+          leftEl.style.opacity = '0.7';
+          rightEl.style.opacity = '0.7';
+          matchState.usedLeft.add(leftIdx);
+          matchState.usedRight.add(idx);
+          matchState.correctCount++;
+        } else {
+          leftEl.style.boxShadow = '0 0 0 4px #EF5350';
+          rightEl.style.boxShadow = '0 0 0 4px #EF5350';
+          setTimeout(() => {
+            leftEl.style.boxShadow = '';
+            rightEl.style.boxShadow = '';
+          }, 800);
+        }
+
+        matchState.selectedLeft = null;
+
+        // Check if all matched
+        if (matchState.correctCount === q.left.length) {
+          score++;
+          document.getElementById('q-score').textContent = `⭐ ${score}`;
+          const fb = document.getElementById('q-feedback');
+          fb.classList.remove('hidden');
+          fb.className = 'text-center mt-4 text-2xl font-black bounce-in text-green-500';
+          fb.textContent = '🎉 Semua cocok! Hebat!';
+          answered = true;
+          setTimeout(() => { current++; if (current < questions.length) renderQuestion(); else showResult(); }, 1500);
+        }
+      }
+    }
+
+    function checkAnswer(selected, btn) {
+      if (answered) return;
+      answered = true;
+      const q = questions[current];
+      const correct = q.type === 'tf' ? selected === q.answer : selected === q.answer;
+      const fb = document.getElementById('q-feedback');
+      fb.classList.remove('hidden');
+      fb.className = 'text-center mt-4 text-2xl font-black bounce-in';
+      if (correct) {
+        score++;
+        btn.classList.add('ring-4','ring-green-400');
+        fb.textContent = '🎉 Benar! Hebat!';
+        fb.classList.add('text-green-500');
+      } else {
+        btn.classList.add('ring-4','ring-red-300');
+        fb.textContent = '😊 Yuk coba lagi nanti!';
+        fb.classList.add('text-red-400');
+      }
+      document.getElementById('q-score').textContent = `⭐ ${score}`;
+      setTimeout(() => { current++; if (current < questions.length) renderQuestion(); else showResult(); }, 1500);
+    }
+
+    function showResult() {
+      showScreen('result-screen');
+      const pct = score / questions.length;
+      let msg = pct >= 0.8 ? 'MasyaAllah Hebat! 🌟' : pct >= 0.5 ? 'Kerja Bagus! 👏' : 'Semangat Belajar! 💪';
+      document.getElementById('result-msg').textContent = msg;
+      document.getElementById('result-score').textContent = `${score} / ${questions.length}`;
+      spawnConfetti();
+    }
+
+    function spawnConfetti() {
+      const container = document.getElementById('confetti-container');
+      container.innerHTML = '';
+      const colors = ['#80CBC4','#81D4FA','#FFD54F','#A5D6A7','#CE93D8'];
+      for (let i = 0; i < 30; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = Math.random()*100 + '%';
+        piece.style.backgroundColor = colors[Math.floor(Math.random()*colors.length)];
+        piece.style.animationDelay = Math.random()*2 + 's';
+        piece.style.width = (Math.random()*8+6)+'px';
+        piece.style.height = piece.style.width;
+        container.appendChild(piece);
+      }
+    }
+
+    function resetQuiz() { startQuiz(); }
+
+    // Element SDK
+    const defaultConfig = {
+      quiz_title: "Quiz Pintar Anak Sholeh",
+      background_color: "#E8F5E9",
+      surface_color: "#FFFFFF",
+      text_color: "#455A64",
+      primary_action: "#4DB6AC",
+      secondary_action: "#FFB74D"
+    };
+
+    window.elementSdk.init({
+      defaultConfig,
+      onConfigChange: async (config) => {
+        const bg = config.background_color || defaultConfig.background_color;
+        const txt = config.text_color || defaultConfig.text_color;
+        const surface = config.surface_color || defaultConfig.surface_color;
+        const primary = config.primary_action || defaultConfig.primary_action;
+        const font = config.font_family || 'Nunito';
+        const size = config.font_size || 16;
+
+        document.body.style.background = `linear-gradient(180deg, ${bg} 0%, #E3F2FD 50%, #FFF3E0 100%)`;
+        document.querySelectorAll('.bg-white\\/80').forEach(el => {
+          el.style.backgroundColor = surface + 'CC';
+        });
+        document.getElementById('q-text').style.color = txt;
+        document.querySelectorAll('*').forEach(el => {
+          el.style.fontFamily = `${font}, Nunito, sans-serif`;
+        });
+        document.getElementById('q-text').style.fontSize = `${size * 1.25}px`;
+      },
+      mapToCapabilities: (config) => ({
+        recolorables: [
+          { get: () => config.background_color || defaultConfig.background_color, set: v => { config.background_color = v; window.elementSdk.setConfig({background_color:v}); }},
+          { get: () => config.surface_color || defaultConfig.surface_color, set: v => { config.surface_color = v; window.elementSdk.setConfig({surface_color:v}); }},
+          { get: () => config.text_color || defaultConfig.text_color, set: v => { config.text_color = v; window.elementSdk.setConfig({text_color:v}); }},
+          { get: () => config.primary_action || defaultConfig.primary_action, set: v => { config.primary_action = v; window.elementSdk.setConfig({primary_action:v}); }},
+          { get: () => config.secondary_action || defaultConfig.secondary_action, set: v => { config.secondary_action = v; window.elementSdk.setConfig({secondary_action:v}); }}
+        ],
+        borderables: [],
+        fontEditable: { get: () => config.font_family || 'Nunito', set: v => { config.font_family = v; window.elementSdk.setConfig({font_family:v}); }},
+        fontSizeable: { get: () => config.font_size || 16, set: v => { config.font_size = v; window.elementSdk.setConfig({font_size:v}); }}
+      }),
+      mapToEditPanelValues: (config) => new Map([
+        ["quiz_title", config.quiz_title || defaultConfig.quiz_title]
+      ])
+    });
+
+    lucide.createIcons();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a034a90c88c79f73',t:'MTc4MDA0ODkxMw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
